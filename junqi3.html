@@ -1,0 +1,1074 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+<title>H5军棋完全版</title>
+<style>
+* {
+  box-sizing: border-box;
+  -webkit-tap-highlight-color: transparent;
+}
+
+body {
+  font-family: "微软雅黑", -apple-system, BlinkMacSystemFont, sans-serif;
+  margin: 0;
+  padding: 10px;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  background: #f0f0f0;
+  min-height: 100vh;
+  touch-action: manipulation;
+}
+
+h1 {
+  margin: 5px 0;
+  font-size: 1.5em;
+  text-align: center;
+  color: #333;
+}
+
+.button-group {
+  display: flex;
+  gap: 10px;
+  margin: 10px 0;
+  flex-wrap: wrap;
+  justify-content: center;
+  width: 100%;
+  max-width: 500px;
+}
+
+button {
+  padding: 10px 15px;
+  font-size: 14px;
+  border-radius: 8px;
+  border: none;
+  background: #4CAF50;
+  color: white;
+  cursor: pointer;
+  flex: 1;
+  min-width: 120px;
+  max-width: 200px;
+  transition: transform 0.1s, background-color 0.2s;
+}
+
+button:active {
+  transform: scale(0.98);
+}
+
+#restart-btn {
+  background: #2196F3;
+}
+
+#game-area {
+  width: 100%;
+  max-width: 500px;
+  margin: 0 auto;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+}
+
+#game-container {
+  display: grid;
+  grid-template-columns: repeat(10, 1fr);
+  grid-template-rows: repeat(10, 1fr);
+  gap: 1px;
+  margin-bottom: 10px;
+  width: 100%;
+  aspect-ratio: 1/1;
+  max-width: 500px;
+}
+
+.cell {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  font-size: 11px;
+  text-align: center;
+  border: 1px solid #ccc;
+  user-select: none;
+  cursor: pointer;
+  position: relative;
+  touch-action: manipulation;
+  overflow: hidden;
+  min-height: 0;
+  word-break: break-all;
+}
+
+.cell.river { background: #99ccff; }
+.cell.rail { background: #ffff99; }
+.cell.camp { background: #ff9999; }
+.cell.barrack { background: #ffcc99; }
+.cell.selected { 
+  border: 3px solid orange !important;
+  z-index: 1;
+}
+
+#turn-indicator {
+  margin: 5px 0;
+  font-weight: bold;
+  font-size: 16px;
+  text-align: center;
+  padding: 8px 15px;
+  border-radius: 8px;
+  width: 100%;
+  max-width: 500px;
+  box-shadow: 0 2px 5px rgba(0,0,0,0.1);
+}
+
+.turn-box {
+  background: #fff;
+  border-radius: 8px;
+  padding: 8px;
+  box-shadow: 0 2px 5px rgba(0,0,0,0.1);
+}
+
+.blue-turn { 
+  color: blue;
+  background: linear-gradient(135deg, #e6f2ff, #ffffff);
+  border-left: 5px solid blue;
+}
+
+.red-turn { 
+  color: red;
+  background: linear-gradient(135deg, #ffe6e6, #ffffff);
+  border-left: 5px solid red;
+}
+
+#log-container {
+  width: 100%;
+  max-width: 500px;
+  margin-top: 10px;
+}
+
+#log-title {
+  font-weight: bold;
+  margin-bottom: 5px;
+  color: #333;
+  font-size: 14px;
+}
+
+#log {
+  width: 100%;
+  height: 120px;
+  overflow-y: auto;
+  background: #fff;
+  border: 1px solid #ccc;
+  border-radius: 8px;
+  padding: 8px;
+  font-size: 12px;
+  line-height: 1.4;
+}
+
+/* 手机端适配的棋子字体大小 */
+@media (max-width: 480px) {
+  .cell {
+    font-size: 9px;
+    padding: 2px;
+  }
+  
+  button {
+    min-width: 100px;
+    padding: 8px 12px;
+  }
+  
+  #log {
+    height: 100px;
+  }
+}
+
+@media (max-width: 360px) {
+  .cell {
+    font-size: 8px;
+  }
+  
+  h1 {
+    font-size: 1.2em;
+  }
+}
+
+/* 说明书样式 */
+#instructions-modal {
+  position: fixed;
+  top: 0;
+  left: 0;
+  width: 100%;
+  height: 100%;
+  background: rgba(0,0,0,0.8);
+  display: none;
+  justify-content: center;
+  align-items: center;
+  z-index: 1000;
+  padding: 15px;
+  overflow-y: auto;
+}
+
+#instructions-content {
+  background: white;
+  padding: 20px;
+  border-radius: 12px;
+  max-width: 600px;
+  max-height: 85vh;
+  overflow-y: auto;
+  box-shadow: 0 5px 20px rgba(0,0,0,0.3);
+  width: 100%;
+}
+
+#instructions-content h2 {
+  text-align: center;
+  color: #333;
+  margin-top: 0;
+  font-size: 1.4em;
+}
+
+.section-title {
+  color: #2c3e50;
+  border-bottom: 2px solid #3498db;
+  padding-bottom: 5px;
+  margin-top: 20px;
+  font-size: 1.1em;
+}
+
+.rules-list {
+  list-style-type: none;
+  padding-left: 0;
+  margin: 10px 0;
+}
+
+.rules-list li {
+  margin: 8px 0;
+  padding-left: 20px;
+  position: relative;
+  line-height: 1.5;
+  font-size: 0.9em;
+}
+
+.rules-list li:before {
+  content: "•";
+  color: #3498db;
+  font-size: 18px;
+  position: absolute;
+  left: 0;
+  top: -2px;
+}
+
+.piece-grid {
+  display: grid;
+  grid-template-columns: repeat(2, 1fr);
+  gap: 10px;
+  margin: 15px 0;
+}
+
+.piece-column {
+  padding: 10px;
+  border-radius: 8px;
+  font-size: 0.85em;
+}
+
+.piece-column.blue {
+  background: #e6f2ff;
+  border: 2px solid #4da6ff;
+}
+
+.piece-column.red {
+  background: #ffe6e6;
+  border: 2px solid #ff6666;
+}
+
+.piece-column h3 {
+  text-align: center;
+  margin-top: 0;
+  margin-bottom: 10px;
+  font-size: 1em;
+}
+
+.piece-item {
+  display: flex;
+  justify-content: space-between;
+  padding: 4px 0;
+  border-bottom: 1px dashed rgba(0,0,0,0.1);
+}
+
+.piece-name {
+  font-weight: bold;
+  color: #333;
+}
+
+.piece-nickname {
+  color: #666;
+}
+
+.map-legend {
+  display: grid;
+  grid-template-columns: repeat(2, 1fr);
+  gap: 10px;
+  margin: 15px 0;
+}
+
+.legend-item {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  font-size: 0.85em;
+}
+
+.color-box {
+  width: 18px;
+  height: 18px;
+  border: 1px solid #ccc;
+  flex-shrink: 0;
+}
+
+#close-instructions {
+  display: block;
+  margin: 20px auto 0;
+  padding: 10px 25px;
+  background: #3498db;
+  color: white;
+  border: none;
+  border-radius: 8px;
+  cursor: pointer;
+  font-size: 14px;
+  font-weight: bold;
+  transition: transform 0.1s, background-color 0.2s;
+}
+
+#close-instructions:active {
+  transform: scale(0.98);
+  background: #2980b9;
+}
+
+/* 操作提示 */
+#operation-hint {
+  text-align: center;
+  font-size: 12px;
+  color: #666;
+  margin-top: 5px;
+  padding: 5px;
+  background: rgba(255,255,255,0.7);
+  border-radius: 5px;
+  width: 100%;
+  max-width: 500px;
+}
+
+/* 游戏状态指示器 */
+#game-status {
+  text-align: center;
+  font-weight: bold;
+  color: #333;
+  margin: 5px 0;
+  padding: 5px;
+  border-radius: 5px;
+  background: rgba(255,255,255,0.8);
+  width: 100%;
+  max-width: 500px;
+}
+
+/* 响应式调整 */
+@media (max-width: 768px) {
+  #instructions-content {
+    padding: 15px;
+    margin: 10px;
+  }
+  
+  .piece-grid {
+    grid-template-columns: 1fr;
+    gap: 15px;
+  }
+  
+  .map-legend {
+    grid-template-columns: 1fr;
+  }
+}
+</style>
+</head>
+<body>
+<h1>H5军棋完全版</h1>
+
+<div class="button-group">
+  <button onclick="showInstructions()">说明书</button>
+  <button id="restart-btn" onclick="restartGame()">重新开始</button>
+</div>
+
+<div id="game-area">
+  <div id="game-status"></div>
+  <div id="game-container"></div>
+  
+  <div id="turn-indicator">
+    <div class="turn-box" id="turn-box">
+      当前回合：<span id="turn-text">蓝方</span>
+    </div>
+  </div>
+  
+  <div id="operation-hint">点击棋子选择，再次点击目标位置移动</div>
+  
+  <div id="log-container">
+    <div id="log-title">游戏日志</div>
+    <div id="log"></div>
+  </div>
+</div>
+
+<!-- 说明书模态框 -->
+<div id="instructions-modal">
+  <div id="instructions-content">
+    <h2>军棋游戏规则说明书</h2>
+    
+    <div class="section-title">一、游戏流程</div>
+    <ul class="rules-list">
+      <li><strong>翻棋阶段：</strong>初始所有棋子背面朝上，蓝方先翻开一个棋子，然后红方翻一个，交替进行</li>
+      <li><strong>开始阶段：</strong>所有棋子都翻完后，游戏正式开始</li>
+      <li><strong>移动阶段：</strong>蓝方先手移动，然后红方移动，交替进行，每次只能移动一个棋子</li>
+      <li><strong>胜利条件：</strong>吃掉对方的军棋即获胜</li>
+    </ul>
+    
+    <div class="section-title">二、棋子列表</div>
+    <div class="piece-grid">
+      <div class="piece-column blue">
+        <h3>蓝方棋子</h3>
+        <div class="piece-item"><span class="piece-name">军棋</span><span class="piece-nickname">Lucky</span></div>
+        <div class="piece-item"><span class="piece-name">司令</span><span class="piece-nickname">爸爸</span></div>
+        <div class="piece-item"><span class="piece-name">军长</span><span class="piece-nickname">奶奶</span></div>
+        <div class="piece-item"><span class="piece-name">师长</span><span class="piece-nickname">爷爷</span></div>
+        <div class="piece-item"><span class="piece-name">旅长</span><span class="piece-nickname">猛吃</span></div>
+        <div class="piece-item"><span class="piece-name">团长</span><span class="piece-nickname">丑照</span></div>
+        <div class="piece-item"><span class="piece-name">营长</span><span class="piece-nickname">棉被</span></div>
+        <div class="piece-item"><span class="piece-name">连长</span><span class="piece-nickname">砸狗</span></div>
+        <div class="piece-item"><span class="piece-name">排长</span><span class="piece-nickname">篮球</span></div>
+        <div class="piece-item"><span class="piece-name">地雷</span><span class="piece-nickname">妈妈</span></div>
+        <div class="piece-item"><span class="piece-name">炸弹</span><span class="piece-nickname">大力</span></div>
+        <div class="piece-item"><span class="piece-name">工兵</span><span class="piece-nickname">姥爷</span></div>
+      </div>
+      
+      <div class="piece-column red">
+        <h3>红方棋子</h3>
+        <div class="piece-item"><span class="piece-name">军棋</span><span class="piece-nickname">吕思钰</span></div>
+        <div class="piece-item"><span class="piece-name">司令</span><span class="piece-nickname">李老师</span></div>
+        <div class="piece-item"><span class="piece-name">军长</span><span class="piece-nickname">邢老师</span></div>
+        <div class="piece-item"><span class="piece-name">师长</span><span class="piece-nickname">董老师</span></div>
+        <div class="piece-item"><span class="piece-name">旅长</span><span class="piece-nickname">张惠溪</span></div>
+        <div class="piece-item"><span class="piece-name">团长</span><span class="piece-nickname">戎薏</span></div>
+        <div class="piece-item"><span class="piece-name">营长</span><span class="piece-nickname">田紫涵</span></div>
+        <div class="piece-item"><span class="piece-name">连长</span><span class="piece-nickname">魏伊涵</span></div>
+        <div class="piece-item"><span class="piece-name">排长</span><span class="piece-nickname">巫佳颖</span></div>
+        <div class="piece-item"><span class="piece-name">地雷</span><span class="piece-nickname">王思迪</span></div>
+        <div class="piece-item"><span class="piece-name">炸弹</span><span class="piece-nickname">田子航</span></div>
+        <div class="piece-item"><span class="piece-name">工兵</span><span class="piece-nickname">刘秀元</span></div>
+      </div>
+    </div>
+    
+    <div class="section-title">三、移动规则</div>
+    <ul class="rules-list">
+      <li><strong>普通格子：</strong>每次只能移动一步（上、下、左、右）</li>
+      <li><strong>铁路线（黄色）：</strong>除工兵外只能直线移动任意距离</li>
+      <li><strong>工兵特殊：</strong>在铁路线上可以拐弯移动任意距离</li>
+      <li><strong>河道（蓝色）：</strong>任何棋子都不能进入</li>
+      <li><strong>行营（橙色）：</strong>进入后免受攻击，每次只能进入一个棋子</li>
+      <li><strong>大本营（红色）：</strong>军棋初始位置，进入后不能移动</li>
+      <li><strong>禁止移动：</strong>军棋和地雷完全不能移动</li>
+    </ul>
+    
+    <div class="section-title">四、战斗规则</div>
+    <ul class="rules-list">
+      <li><strong>军衔大小：</strong>司令 > 军长 > 师长 > 旅长 > 团长 > 营长 > 连长 > 排长 > 工兵</li>
+      <li><strong>工兵：</strong>可以拆除地雷，可以挖军棋</li>
+      <li><strong>炸弹：</strong>与任何棋子相遇都同归于尽</li>
+      <li><strong>地雷：</strong>
+        <ul class="rules-list">
+          <li>只能被工兵拆除</li>
+          <li>其他棋子踩到地雷被炸</li>
+          <li>不能移动</li>
+        </ul>
+      </li>
+      <li><strong>军棋：</strong>
+        <ul class="rules-list">
+          <li>被任何棋子吃掉即游戏结束</li>
+          <li>不能移动</li>
+          <li>必须放在大本营中</li>
+        </ul>
+      </li>
+      <li><strong>同等级：</strong>相同军衔的棋子相遇，同归于尽</li>
+    </ul>
+    
+    <div class="section-title">五、地图标记</div>
+    <div class="map-legend">
+      <div class="legend-item">
+        <div class="color-box" style="background: #99ccff;"></div>
+        <span><strong>河道</strong> - 不能进入</span>
+      </div>
+      <div class="legend-item">
+        <div class="color-box" style="background: #ffff99;"></div>
+        <span><strong>铁路</strong> - 快速移动</span>
+      </div>
+      <div class="legend-item">
+        <div class="color-box" style="background: #ff9999;"></div>
+        <span><strong>行营</strong> - 免受攻击</span>
+      </div>
+      <div class="legend-item">
+        <div class="color-box" style="background: #ffcc99;"></div>
+        <span><strong>大本营</strong> - 军旗位置</span>
+      </div>
+    </div>
+    
+    <div class="section-title">六、操作说明</div>
+    <ul class="rules-list">
+      <li><strong>翻棋：</strong>点击背面朝上的棋子（黑色圆点）</li>
+      <li><strong>选择棋子：</strong>点击已翻开的己方棋子</li>
+      <li><strong>移动棋子：</strong>先选择己方棋子，再点击目标位置</li>
+      <li><strong>取消选择：</strong>点击空白处或其他棋子</li>
+      <li><strong>查看日志：</strong>游戏下方显示所有操作记录</li>
+      <li><strong>手机操作：</strong>触摸选择棋子，触摸目标位置移动</li>
+    </ul>
+    
+    <button id="close-instructions" onclick="closeInstructions()">关闭说明书</button>
+  </div>
+</div>
+
+<script>
+// 棋子名字及数量
+const blueNames={"军棋":"Lucky","司令":"爸爸","军长":"奶奶","师长":"爷爷","旅长":"猛吃","团长":"丑照","营长":"棉被","连长":"砸狗","排长":"篮球","地雷":"妈妈","炸弹":"大力","工兵":"姥爷"};
+const redNames={"军棋":"吕思钰","司令":"李老师","军长":"邢老师","师长":"董老师","旅长":"张惠溪","团长":"戎薏","营长":"田紫涵","连长":"魏伊涵","排长":"巫佳颖","地雷":"王思迪","炸弹":"田子航","工兵":"刘秀元"};
+
+const pieceCount={
+  "军棋":1,"司令":1,"军长":1,"师长":2,"旅长":2,"团长":2,"营长":2,"连长":3,"排长":3,"工兵":3,"地雷":3,"炸弹":2
+};
+
+const rankOrder=["军棋","排长","连长","营长","团长","旅长","师长","军长","司令"];
+
+// 棋盘
+const board=Array(10).fill(null).map(()=>Array(10).fill(null));
+const container=document.getElementById("game-container");
+const log=document.getElementById("log");
+const turnText=document.getElementById("turn-text");
+const turnBox=document.getElementById("turn-box");
+const instructionsModal=document.getElementById("instructions-modal");
+const gameStatus=document.getElementById("game-status");
+
+// 特殊格子
+const rivers=[[4,2],[4,3],[5,2],[5,3],[4,6],[4,7],[5,6],[5,7]];
+const rails=[[2,0],[2,1],[2,2],[2,3],[2,4],[2,5],[2,6],[2,7],[2,8],[2,9],[7,0],[7,1],[7,2],[7,3],[7,4],[7,5],[7,6],[7,7],[7,8],[7,9]];
+const camps=[[1,1],[1,2],[1,3],[2,1],[2,3],[7,6],[7,7],[7,8],[8,6],[8,8]]; //行营
+const barracks=[[0,0],[0,9],[9,0],[9,9]]; //大本营
+
+// 游戏状态
+let turn="blue";
+let selected=null;
+let gameStarted=false; // 标记游戏是否开始（所有棋子都翻完）
+
+// 初始化棋盘
+function initBoard(){
+  // 清空棋盘
+  for(let i=0;i<10;i++){
+    for(let j=0;j<10;j++){
+      board[i][j]=null;
+    }
+  }
+  
+  container.innerHTML="";
+  
+  // 创建棋盘格子 - 使用百分比尺寸
+  for(let i=0;i<10;i++){
+    for(let j=0;j<10;j++){
+      const cell=document.createElement("div");
+      cell.className="cell";
+      cell.dataset.x=i;
+      cell.dataset.y=j;
+      
+      // 添加地形类
+      if(rivers.some(r=>r[0]===i&&r[1]===j)) cell.classList.add("river");
+      if(rails.some(r=>r[0]===i&&r[1]===j)) cell.classList.add("rail");
+      if(camps.some(r=>r[0]===i&&r[1]===j)) cell.classList.add("camp");
+      if(barracks.some(r=>r[0]===i&&r[1]===j)) cell.classList.add("barrack");
+      
+      // 使用事件委托，避免手机端的点击问题
+      cell.addEventListener("click",(e)=>{
+        e.preventDefault();
+        e.stopPropagation();
+        const x=parseInt(cell.dataset.x);
+        const y=parseInt(cell.dataset.y);
+        cellClick(x,y);
+      });
+      
+      // 添加触摸事件支持
+      cell.addEventListener("touchstart",(e)=>{
+        e.preventDefault();
+        e.stopPropagation();
+        const x=parseInt(cell.dataset.x);
+        const y=parseInt(cell.dataset.y);
+        cellClick(x,y);
+      }, {passive: false});
+      
+      container.appendChild(cell);
+    }
+  }
+  
+  placePieces("blue");
+  placePieces("red");
+  renderBoard();
+  updateTurnIndicator();
+  updateGameStatus();
+  logMessage("游戏开始！所有棋子背面朝上，点击棋子翻开。蓝方先翻棋。");
+}
+
+// 重新开始游戏
+function restartGame(){
+  if(confirm("确定要重新开始游戏吗？")){
+    selected=null;
+    turn="blue";
+    gameStarted=false;
+    initBoard();
+  }
+}
+
+// 随机摆放棋子在兵站
+function placePieces(color){
+  const names=Object.keys(pieceCount);
+  const rows=color==="blue"? [6,7,8,9]:[0,1,2,3];
+  
+  for(let name of names){
+    for(let k=0;k<pieceCount[name];k++){
+      let placed=false;
+      let attempts=0;
+      while(!placed && attempts<100){
+        let x=rows[Math.floor(Math.random()*rows.length)];
+        let y=Math.floor(Math.random()*10);
+        if(!board[x][y] && !rivers.some(r=>r[0]===x && r[1]===y)){
+          board[x][y]={name:name,color:color,flipped:false, moved:false};
+          placed=true;
+        }
+        attempts++;
+      }
+    }
+  }
+}
+
+// 渲染棋盘
+function renderBoard(){
+  for(let i=0;i<10;i++){
+    for(let j=0;j<10;j++){
+      const cellDiv=container.children[i*10+j];
+      const piece=board[i][j];
+      
+      // 清除所有样式
+      cellDiv.style.color="";
+      cellDiv.style.backgroundColor="";
+      cellDiv.classList.remove("selected");
+      
+      if(piece){
+        if(piece.flipped){
+          // 已翻开的棋子
+          let displayName=pieceColorName(piece);
+          // 如果是两个字的名字，中间加空格
+          if(displayName.length===2){
+            displayName=displayName.split('').join(' ');
+          }
+          cellDiv.textContent=displayName;
+          cellDiv.style.color=piece.color==="blue"?"blue":"red";
+          cellDiv.style.backgroundColor=piece.color==="blue"?"rgba(230,242,255,0.8)":"rgba(255,230,230,0.8)";
+          
+          // 设置字体大小适应格子
+          const nameLength=displayName.length;
+          if(nameLength<=2){
+            cellDiv.style.fontSize="11px";
+            cellDiv.style.fontWeight="bold";
+          } else if(nameLength<=3){
+            cellDiv.style.fontSize="10px";
+            cellDiv.style.fontWeight="bold";
+          } else {
+            cellDiv.style.fontSize="9px";
+            cellDiv.style.fontWeight="normal";
+          }
+        } else {
+          // 未翻开的棋子
+          cellDiv.textContent="●";
+          cellDiv.style.color="black";
+          cellDiv.style.fontSize="14px";
+          cellDiv.style.fontWeight="bold";
+        }
+      } else {
+        cellDiv.textContent="";
+      }
+      
+      // 标记选中的格子
+      if(selected && selected[0]===i && selected[1]===j){
+        cellDiv.classList.add("selected");
+      }
+    }
+  }
+}
+
+// 显示棋子名字
+function pieceColorName(piece){return (piece.color==="blue"?blueNames:redNames)[piece.name];}
+
+// 点击格子 - 修复手机端点击问题
+function cellClick(x,y){
+  console.log(`点击格子: (${x},${y})`);
+  const piece=board[x][y];
+  
+  // 如果游戏未开始（棋子未完全翻开），只能翻棋
+  if(!gameStarted){
+    if(piece && !piece.flipped){
+      piece.flipped=true;
+      renderBoard();
+      logMessage(`${turn==="blue"?"蓝方":"红方"}翻出${pieceColorName(piece)}`);
+      // 检查是否所有棋子都已翻开
+      checkAllFlipped();
+      if(!gameStarted) { // 如果游戏还没开始，切换翻棋方
+        turn=turn==="blue"?"red":"blue";
+        updateTurnIndicator();
+        updateGameStatus();
+        logMessage(`${turn==="blue"?"蓝方":"红方"}翻棋回合`);
+      }
+      return;
+    }
+    return; // 游戏未开始，不能移动棋子
+  }
+  
+  // 游戏已开始，正常游戏逻辑
+  // 点击翻开棋子（如果未翻开）
+  if(piece && !piece.flipped){
+    piece.flipped=true;
+    renderBoard();
+    logMessage(`${turn==="blue"?"蓝方":"红方"}翻开${pieceColorName(piece)}`);
+    return;
+  }
+  
+  // 如果已经有选中的棋子
+  if(selected){
+    console.log(`尝试移动从(${selected[0]},${selected[1]})到(${x},${y})`);
+    
+    // 如果是点击自己，取消选择
+    if(selected[0]===x && selected[1]===y){
+      selected=null;
+      renderBoard();
+      logMessage("取消选择棋子");
+      return;
+    }
+    
+    // 尝试移动
+    if(canMove(selected[0],selected[1],x,y)){
+      movePiece(selected[0],selected[1],x,y);
+      selected=null;
+      turn=turn==="blue"?"red":"blue";
+      updateTurnIndicator();
+      updateGameStatus();
+      logMessage(`${turn==="blue"?"蓝方":"红方"}回合`);
+    } else {
+      // 移动失败，检查是否可以重新选择
+      if(piece && piece.color===turn && piece.flipped && canPieceMove(piece,x,y)){
+        // 选择另一个己方棋子
+        selected=[x,y];
+        logMessage(`选择${pieceColorName(piece)}`);
+      } else {
+        // 无效操作，取消选择
+        selected=null;
+        logMessage("移动无效，取消选择");
+      }
+    }
+    renderBoard();
+  } else if(piece && piece.color===turn && piece.flipped && canPieceMove(piece,x,y)) {
+    // 选择棋子
+    selected=[x,y];
+    logMessage(`选择${pieceColorName(piece)}`);
+    renderBoard();
+  }
+}
+
+// 检查棋子是否能移动
+function canPieceMove(piece,x,y){
+  // 军棋和地雷不能移动
+  if(piece.name==="军棋" || piece.name==="地雷"){
+    return false;
+  }
+  // 在大本营中的棋子不能移动
+  if(barracks.some(r=>r[0]===x&&r[1]===y)){
+    return false;
+  }
+  return true;
+}
+
+// 移动判断（铁路直线+工兵可拐弯）
+function canMove(fx,fy,tx,ty){
+  if(fx===tx && fy===ty) return false; // 不能原地不动
+  
+  // 检查目标位置是否合法
+  if(tx<0||tx>9||ty<0||ty>9) return false;
+  if(rivers.some(r=>r[0]===tx&&r[1]===ty)) return false;
+  
+  const attacker=board[fx][fy];
+  if(!attacker) return false;
+  
+  // 检查棋子是否能移动
+  if(!canPieceMove(attacker,fx,fy)){
+    return false;
+  }
+  
+  const dx=tx-fx,dy=ty-fy;
+  const inRail=rails.some(r=>r[0]===fx&&r[1]===fy);
+  const targetInRail=rails.some(r=>r[0]===tx&&r[1]===ty);
+  
+  // 检查是否进入大本营
+  const targetInBarrack=barracks.some(r=>r[0]===tx&&r[1]===ty);
+  if(targetInBarrack){
+    // 只有军旗可以进入大本营
+    if(attacker.name!=="军棋"){
+      return false;
+    }
+  }
+  
+  // 普通移动（非铁路）
+  if(!inRail && !targetInRail){
+    // 只能移动一步
+    if(Math.abs(dx)+Math.abs(dy)!==1) return false;
+  }
+  
+  // 铁路移动
+  if(inRail || targetInRail){
+    // 工兵在铁路上的特殊移动
+    if(attacker.name==="工兵"){
+      // 工兵可以沿着铁路线任意距离移动，可以拐弯
+      return canEngineerMove(fx,fy,tx,ty);
+    } else {
+      // 其他棋子在铁路上只能直线移动
+      if(dx!==0 && dy!==0) return false; // 不能斜着走
+      if(dx===0 && dy===0) return false; // 不能原地不动
+      
+      // 检查路径上是否有障碍物
+      const stepX=dx===0?0:(dx>0?1:-1);
+      const stepY=dy===0?0:(dy>0?1:-1);
+      let cx=fx+stepX,cy=fy+stepY;
+      while(cx!==tx||cy!==ty){
+        // 路径上不能有棋子或河流
+        if(board[cx][cy] || rivers.some(r=>r[0]===cx&&r[1]===cy)) return false;
+        cx+=stepX;cy+=stepY;
+      }
+    }
+  }
+  
+  // 检查目标位置
+  const target=board[tx][ty];
+  if(target && target.color===turn) return false; // 不能吃自己的棋子
+  
+  return true;
+}
+
+// 工兵在铁路上的移动判断
+function canEngineerMove(fx,fy,tx,ty){
+  // 工兵只能在铁路线上移动
+  if(!rails.some(r=>r[0]===fx&&r[1]===fy) || !rails.some(r=>r[0]===tx&&r[1]===ty)){
+    return false;
+  }
+  
+  // 使用BFS检查是否有铁路路径
+  const visited=Array(10).fill().map(()=>Array(10).fill(false));
+  const queue=[[fx,fy]];
+  visited[fx][fy]=true;
+  
+  const dirs=[[1,0],[-1,0],[0,1],[0,-1]];
+  
+  while(queue.length>0){
+    const [x,y]=queue.shift();
+    if(x===tx && y===ty) return true;
+    
+    for(const [dx,dy] of dirs){
+      const nx=x+dx,ny=y+dy;
+      if(nx>=0&&nx<10&&ny>=0&&ny<10 && !visited[nx][ny]){
+        // 检查是否是铁路线且没有棋子阻挡
+        if(rails.some(r=>r[0]===nx&&r[1]===ny) && !board[nx][ny]){
+          visited[nx][ny]=true;
+          queue.push([nx,ny]);
+        }
+      }
+    }
+  }
+  
+  return false;
+}
+
+// 移动棋子
+function movePiece(fx,fy,tx,ty){
+  const attacker=board[fx][fy];
+  const defender=board[tx][ty];
+  
+  attacker.moved=true; // 标记棋子已移动
+  
+  if(defender) {
+    battle(attacker,defender,fx,fy,tx,ty);
+  } else {
+    board[tx][ty]=attacker;
+    board[fx][fy]=null;
+    logMessage(`${pieceColorName(attacker)}移动到(${tx},${ty})`);
+  }
+  
+  checkGameEnd();
+}
+
+// 战斗规则
+function battle(attacker,defender,fx,fy,tx,ty){
+  logMessage(`${pieceColorName(attacker)}攻击${pieceColorName(defender)}`);
+  
+  // 炸弹规则
+  if(attacker.name==="炸弹" || defender.name==="炸弹"){
+    board[fx][fy]=null;
+    board[tx][ty]=null;
+    logMessage("炸弹爆炸，双方同归于尽！");
+    return;
+  }
+  
+  // 地雷规则
+  if(defender.name==="地雷"){
+    if(attacker.name==="工兵"){
+      board[tx][ty]=attacker;
+      board[fx][fy]=null;
+      logMessage("工兵成功拆除地雷！");
+    } else {
+      board[fx][fy]=null;
+      logMessage(`${pieceColorName(attacker)}踩中地雷被炸！`);
+    }
+    return;
+  }
+  
+  // 军棋被攻击
+  if(defender.name==="军棋"){
+    board[tx][ty]=attacker;
+    board[fx][fy]=null;
+    logMessage(`${pieceColorName(attacker)}夺得军棋！`);
+    return;
+  }
+  
+  // 正常战斗比较
+  const attackerRank=rankOrder.indexOf(attacker.name);
+  const defenderRank=rankOrder.indexOf(defender.name);
+  
+  if(attackerRank>defenderRank){
+    board[tx][ty]=attacker;
+    board[fx][fy]=null;
+    logMessage(`${pieceColorName(attacker)}吃掉${pieceColorName(defender)}`);
+  } else if(attackerRank<defenderRank){
+    board[fx][fy]=null;
+    logMessage(`${pieceColorName(attacker)}被${pieceColorName(defender)}吃掉`);
+  } else {
+    // 同等级相碰
+    board[fx][fy]=null;
+    board[tx][ty]=null;
+    logMessage("同归于尽！");
+  }
+}
+
+// 检查游戏是否结束
+function checkGameEnd(){
+  let blueFlag=false, redFlag=false;
+  
+  // 检查军旗是否还存在
+  for(let i=0;i<10;i++){
+    for(let j=0;j<10;j++){
+      const piece=board[i][j];
+      if(piece){
+        if(piece.name==="军棋"){
+          if(piece.color==="blue") blueFlag=true;
+          if(piece.color==="red") redFlag=true;
+        }
+      }
+    }
+  }
+  
+  if(!blueFlag){
+    setTimeout(()=>{
+      alert("红方获胜！");
+      restartGame();
+    }, 300);
+    return;
+  }
+  if(!redFlag){
+    setTimeout(()=>{
+      alert("蓝方获胜！");
+      restartGame();
+    }, 300);
+    return;
+  }
+}
+
+// 检查所有棋子是否都已翻开
+function checkAllFlipped(){
+  let allFlipped=true;
+  for(let i=0;i<10;i++){
+    for(let j=0;j<10;j++){
+      const piece=board[i][j];
+      if(piece && !piece.flipped){
+        allFlipped=false;
+        break;
+      }
+    }
+    if(!allFlipped) break;
+  }
+  
+  if(allFlipped && !gameStarted){
+    gameStarted=true;
+    turn="blue"; // 蓝方先手移动
+    updateTurnIndicator();
+    updateGameStatus();
+    logMessage("所有棋子已翻开！游戏正式开始！蓝方先手移动。");
+  }
+}
+
+// 更新回合指示器
+function updateTurnIndicator(){
+  turnText.textContent=turn==="blue"?"蓝方":"红方";
+  turnBox.className="turn-box "+(turn==="blue"?"blue-turn":"red-turn");
+}
+
+// 更新游戏状态显示
+function updateGameStatus(){
+  if(!gameStarted){
+    gameStatus.textContent="翻棋阶段："+(turn==="blue"?"蓝方":"红方")+"翻棋";
+    gameStatus.style.background=turn==="blue"?"rgba(230,242,255,0.9)":"rgba(255,230,230,0.9)";
+  } else {
+    gameStatus.textContent="移动阶段："+(turn==="blue"?"蓝方":"红方")+"移动";
+    gameStatus.style.background=turn==="blue"?"rgba(230,242,255,0.9)":"rgba(255,230,230,0.9)";
+  }
+}
+
+// 日志
+function logMessage(msg){
+  const time=new Date().toLocaleTimeString('zh-CN', {hour12:false, hour:'2-digit', minute:'2-digit', second:'2-digit'});
+  log.innerHTML+=`[${time}] ${msg}<br>`;
+  log.scrollTop=log.scrollHeight;
+}
+
+// 显示说明书
+function showInstructions(){
+  instructionsModal.style.display="flex";
+  document.body.style.overflow="hidden";
+}
+
+// 关闭说明书
+function closeInstructions(){
+  instructionsModal.style.display="none";
+  document.body.style.overflow="auto";
+}
+
+// 点击模态框外部关闭
+instructionsModal.addEventListener("click", function(e){
+  if(e.target === instructionsModal){
+    closeInstructions();
+  }
+});
+
+// 监听键盘事件
+document.addEventListener('keydown', function(e){
+  if(e.key === 'Escape' && instructionsModal.style.display === 'flex'){
+    closeInstructions();
+  }
+});
+
+// 防止手机端缩放
+document.addEventListener('gesturestart', function(e){
+  e.preventDefault();
+});
+
+// 初始化游戏
+initBoard();
+</script>
+</body>
+</html>
